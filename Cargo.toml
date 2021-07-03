@@ -1,9 +1,11 @@
 [package]
 name = "CatHand"
 version = "0.1.0"
-authors = ["sizumita <sumito@izumita.com>"]
+authors = ["sizumita <contact@sumidora.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+serenity = { git = "https://github.com/serenity-rs/serenity.git", branch = "current", features = ["client", "gateway", "rustls_backend", "model", "unstable_discord_api"], default-features = false }
+tokio = { features = ["full"] }
