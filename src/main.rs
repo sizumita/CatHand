@@ -1,4 +1,7 @@
+extern crate regex;
+
 mod event;
+mod amazon;
 
 use std::env;
 
