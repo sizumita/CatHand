@@ -1,6 +1,18 @@
+use lazy_static::lazy_static;
 use scraper::{Html, Selector, ElementRef};
 use serenity::model::prelude::Embed;
-use serde_json::Value;
+use serenity::{
+    prelude::*,
+};
+use serenity::model::prelude::*;
+use regex::Regex;
+
+
+lazy_static! {
+    static ref AMAZON_REGEX: Regex = Regex::new(
+        r"https?://.*?amazon\.co\.jp.*/(gp(/product)?|dp|ASIN)/(?P<asin>[^/?]{10,})\S*"
+    ).unwrap();
+}
 
 
 #[derive(Debug, PartialEq)]
@@ -17,6 +29,7 @@ impl AmazonData {
     pub fn make_embed(&self) -> Value {
         Embed::fake(|embed| {
             embed
+                .footer(|f| {f.text("Created by @猫の手")})
                 .url(&self.url)
                 .title(&self.title.as_deref().unwrap_or("???"))
                 .description(&self.description.as_deref().unwrap_or("???"))
@@ -132,6 +145,54 @@ pub async fn fetch_amazon_data(url: &str) -> Option<AmazonData> {
         },
         Err(_) => {
             None
+        }
+    }
+}
+
+
+async fn get_or_create_webhook(ctx: &Context, message: &Message) -> Option<Webhook> {
+    let webhooks_r = message.channel_id.webhooks(&ctx.http).await;
+    match webhooks_r {
+        Ok(webhooks) => {
+            if webhooks.is_empty() {
+                let new_webhook = message.channel_id.create_webhook(&ctx.http, "猫の手").await;
+                match new_webhook {
+                    Ok(webhook) => Some(webhook),
+                    _ => None
+                }
+            } else {
+                webhooks.first().cloned()
+            }
+        },
+        _ => None
+    }
+}
+
+async fn find_amazon_urls(message: &Message) -> Vec<Value> {
+    let mut amazon_data_list = Vec::new();
+    for cap in AMAZON_REGEX.captures_iter(&*message.content) {
+        let asin = cap.name("asin").unwrap().as_str();
+        let data = fetch_amazon_data(format!("https://www.amazon.co.jp/gp/product/{}", asin).as_str()).await.unwrap();
+        amazon_data_list.push(data.make_embed());
+    };
+    amazon_data_list
+}
+
+pub async fn send_amazon_embeds(ctx: &Context, message: &Message) {
+    let data = find_amazon_urls(message).await;
+    let webhook = get_or_create_webhook(&ctx, &message).await;
+    let content = AMAZON_REGEX.replace_all(&message.content, "https://www.amazon.co.jp/gp/product/$asin").to_string();
+    match webhook {
+        Some(webhook) => {
+            let _ = webhook.execute(&ctx.http, false, |hook| {
+                hook.embeds(data)
+                    .username(format!("{}#{}", &message.author.name, &message.author.discriminator))
+                    .avatar_url(&message.author.avatar_url().unwrap_or("".to_string()))
+                    .content(content)
+            }).await;
+        },
+        _ => {
+            println!("permission error")
         }
     }
 }
