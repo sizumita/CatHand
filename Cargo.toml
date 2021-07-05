@@ -1,5 +1,5 @@
 [package]
-name = "CatHand"
+name = "cat_hand"
 version = "0.1.0"
 authors = ["sizumita <contact@sumidora.com>"]
 edition = "2018"
@@ -12,3 +12,5 @@ tokio = { features = ["full"] }
 regex = "1.5.4"
 reqwest = { version = "0.11", features = ["json"] }
 scraper = "0.12.0"
+lazy_static = "1.4.0"
+serde_json = "*"

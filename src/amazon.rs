@@ -1,5 +1,6 @@
 use scraper::{Html, Selector, ElementRef};
-use scraper::html::Select;
+use serenity::model::prelude::Embed;
+use serde_json::Value;
 
 
 #[derive(Debug, PartialEq)]
@@ -9,6 +10,22 @@ pub struct AmazonData {
     rating: Option<String>,
     title: Option<String>,
     description: Option<String>,
+    url: String
+}
+
+impl AmazonData {
+    pub fn make_embed(&self) -> Value {
+        Embed::fake(|embed| {
+            embed
+                .url(&self.url)
+                .title(&self.title.as_deref().unwrap_or("???"))
+                .description(&self.description.as_deref().unwrap_or("???"))
+                .field("評価", &self.rating.as_deref().unwrap_or("???"), true)
+                .field("値段", &self.price.as_deref().unwrap_or("???"), true)
+                .thumbnail(&self.image_url.as_deref().unwrap_or(""));
+            embed
+        })
+    }
 }
 
 fn parse_price(element: Option<ElementRef>) -> Option<String> {
@@ -67,7 +84,8 @@ fn parse_description(element: Option<ElementRef>) -> Option<String> {
     }
 }
 
-fn get_data_by_html(html: &str) -> AmazonData {
+
+fn get_data_by_html(html: &str, url: &str) -> AmazonData {
     let price_selector: Selector = Selector::parse(
         "#price,#newBuyBoxPrice,#priceblock_ourprice,#kindle-price,#price_inside_buybox,.slot-price>.a-color-price"
     ).unwrap();
@@ -96,7 +114,8 @@ fn get_data_by_html(html: &str) -> AmazonData {
         image_url: parse_image(image_url),
         rating: parse_rating(rating),
         title: parse_title(title),
-        description: parse_description(description)
+        description: parse_description(description),
+        url: url.to_string()
     }
 }
 
@@ -109,7 +128,7 @@ pub async fn fetch_amazon_data(url: &str) -> Option<AmazonData> {
         await;
     match text {
         Ok(html) => {
-            Some(get_data_by_html(&*html))
+            Some(get_data_by_html(&*html, url))
         },
         Err(_) => {
             None
@@ -129,7 +148,8 @@ mod tests {
             image_url: Some("https://m.media-amazon.com/images/I/51oc7UqeIPL._SY346_.jpg".to_string()),
             rating: Some("星5つ中の4.4".to_string()),
             title: Some("日本本土決戦～昭和２０年１１月、米軍皇土へ侵攻す！～ (光文社文庫) | 檜山 良昭 | 日本の小説・文芸 | Kindleストア | Amazon".to_string()),
-            description: Some("Amazonで檜山 良昭の日本本土決戦～昭和２０年１１月、米軍皇土へ侵攻す！～ (光文社文庫)。アマゾンならポイント還元本が多数。一度購入いただいた電子書籍は、KindleおよびFire端末、スマートフォンやタブレットなど、様々な端末でもお楽しみいただけます。".to_string())
+            description: Some("Amazonで檜山 良昭の日本本土決戦～昭和２０年１１月、米軍皇土へ侵攻す！～ (光文社文庫)。アマゾンならポイント還元本が多数。一度購入いただいた電子書籍は、KindleおよびFire端末、スマートフォンやタブレットなど、様々な端末でもお楽しみいただけます。".to_string()),
+            url: "https://www.amazon.co.jp/gp/product/B016K1K0AW/".to_string()
         };
         let data = fetch_amazon_data(
             "https://www.amazon.co.jp/gp/product/B016K1K0AW/"
