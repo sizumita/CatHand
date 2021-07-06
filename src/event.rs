@@ -6,7 +6,7 @@ use serenity::{
 };
 use crate::Handler;
 use crate::amazon::{send_amazon_embeds, AMAZON_REGEX};
-use crate::twitter::send_twitter_buttons;
+use crate::twitter::{send_twitter_buttons, show_images};
 use serenity::model::prelude::*;
 use regex::Regex;
 use serde_json::Value;
@@ -35,8 +35,9 @@ impl EventHandler for Handler {
         if message.embeds.is_some() {
             let embeds = message.clone().embeds.unwrap();
             if embeds.len() != 0 {
-                let base_message = &ctx.http.get_message(message.channel_id.0, message.id.0).await.unwrap();
-                send_twitter_buttons(&ctx, base_message).await;
+                let base_message = ctx.http.get_message(message.channel_id.0, message.id.0).await;
+                if base_message.is_err() { return; }
+                send_twitter_buttons(&ctx, &base_message.unwrap()).await;
             }
         }
     }
@@ -45,6 +46,24 @@ impl EventHandler for Handler {
         println!("{} is connected!", ready.user.name);
 
         ctx.set_activity(Activity::playing("猫の手も借りたい")).await;
+    }
+
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        if interaction.kind == InteractionType::MessageComponent {
+            if let Some(data) = interaction.data.as_ref() {
+                match data {
+                    InteractionData::MessageComponent(component) => {
+                        match &*component.custom_id {
+                            "twitter-image" => {
+                                show_images(&ctx, &interaction, &component).await;
+                            }
+                            _ => {}
+                        }
+                    },
+                    _ => {}
+                }
+            }
+        }
     }
 }
 

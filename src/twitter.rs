@@ -70,3 +70,21 @@ pub async fn send_twitter_buttons(ctx: &Context, message: &Message) {
         ).await;
     }
 }
+
+
+pub async fn show_images(ctx: &Context, interaction: &Interaction, component: &MessageComponent) {
+    let reference = interaction.clone().message.unwrap().regular().unwrap().message_reference.unwrap();
+    let embeds = reference.channel_id.message(&ctx.http, reference.message_id.unwrap()).await.unwrap().embeds;
+    let all_twitter_urls = get_twitter_urls(
+        &embeds
+    );
+    let tweet_url = interaction.clone().message.unwrap().regular().unwrap()
+        .content.replace("<", "").replace(">", "");
+    let image_urls = all_twitter_urls.get(&Some(tweet_url)).unwrap();
+    interaction.create_interaction_response(&ctx.http, |response| {
+        response.interaction_response_data(|data| {
+            data.flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+                .content(image_urls.join("\n"))
+        })
+    }).await;
+}
