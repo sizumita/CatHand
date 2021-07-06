@@ -5,15 +5,13 @@ use serenity::{
     prelude::*,
 };
 use crate::Handler;
-use crate::amazon::send_amazon_embeds;
+use crate::amazon::{send_amazon_embeds, AMAZON_REGEX};
+use crate::twitter::send_twitter_buttons;
 use serenity::model::prelude::*;
 use regex::Regex;
 use serde_json::Value;
 
 lazy_static!{
-    static ref AMAZON_REGEX: Regex = Regex::new(
-        r"https?://.*?amazon\.co\.jp.*/(gp(/product)?|dp|ASIN)/(?P<asin>[^/?]{10,})\S*"
-    ).unwrap();
     static ref TWITTER_REGEX: Regex = Regex::new(
         r"https?://twitter.com/(?P<username>[^/\s]+)/status/(?P<tweetId>[0-9]+)"
     ).unwrap();
@@ -28,6 +26,19 @@ impl EventHandler for Handler {
             let _ = send_amazon_embeds(&ctx, &message).await;
             let _ = message.delete(&ctx.http).await;
         };
+        if message.embeds.len() != 0 {
+            send_twitter_buttons(&ctx, &message).await;
+        }
+    }
+
+    async fn message_update(&self, ctx: Context, message: MessageUpdateEvent) {
+        if message.embeds.is_some() {
+            let embeds = message.clone().embeds.unwrap();
+            if embeds.len() != 0 {
+                let base_message = &ctx.http.get_message(message.channel_id.0, message.id.0).await.unwrap();
+                send_twitter_buttons(&ctx, base_message).await;
+            }
+        }
     }
 
     async fn ready(&self, ctx: Context, ready: Ready) {

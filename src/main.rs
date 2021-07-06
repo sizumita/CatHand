@@ -2,6 +2,7 @@ extern crate regex;
 
 mod event;
 mod amazon;
+mod twitter;
 
 use std::env;
 

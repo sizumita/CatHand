@@ -6,10 +6,11 @@ use serenity::{
 };
 use serenity::model::prelude::*;
 use regex::Regex;
+use serde_json::Value;
 
 
 lazy_static! {
-    static ref AMAZON_REGEX: Regex = Regex::new(
+    pub static ref AMAZON_REGEX: Regex = Regex::new(
         r"https?://.*?amazon\.co\.jp.*/(gp(/product)?|dp|ASIN)/(?P<asin>[^/?]{10,})\S*"
     ).unwrap();
 }
