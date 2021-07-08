@@ -1,104 +1,66 @@
-name: Release
-
-on:
-  push:
-    tags:
-      - 'v*'
 jobs:
   build:
+
     strategy:
       matrix:
         target:
-          - x86_64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - x86_64-pc-windows-msvc
           - x86_64-apple-darwin
         include:
-          - target: x86_64-unknown-linux-gnu
+          - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
           - target: x86_64-apple-darwin
             os: macos-latest
 
-    runs-on: ${{ matrix.os }}
+    runs-on: $｛｛ matrix.os ｝｝
 
     steps:
-      - uses: actions/checkout@v1
+      - name: Setup code
+        uses: actions/checkout@v2
 
-      # https://github.com/actions/cache/blob/master/examples.md#rust---cargo
-      - name: Cache cargo registry
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache cargo index
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache cargo build
-        uses: actions/cache@v1
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install musl tools
+        if : matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt install -qq -y musl-tools --no-install-recommends
 
-      - uses: actions-rs/toolchain@v1
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
+          profile: minimal
           toolchain: stable
+          target: $｛｛ matrix.target ｝｝
           override: true
-      - uses: actions-rs/cargo@v1.0.1
+
+      - name: test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+      - name: Build
+        uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --target=${{ matrix.target }}
-          use-cross: true
+          args: --release --target=$｛｛ matrix.target ｝｝
 
-      - run: |
-          zip --junk-paths slack-stream-json-${{ matrix.target }} target/${{ matrix.target }}/release/slack-stream-json
-      - uses: actions/upload-artifact@v1
-        with:
-          name: build-${{ matrix.target }}
-          path: slack-stream-json-${{ matrix.target }}.zip
-
-  create-release:
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-      - id: create-release
-        uses: actions/create-release@v1.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-      - run: |
-          echo '${{ steps.create-release.outputs.upload_url }}' > release_upload_url.txt
-      - uses: actions/upload-artifact@v1
-        with:
-          name: create-release
-          path: release_upload_url.txt
-
-  upload-release:
-    strategy:
-      matrix:
-        target:
-          - x86_64-unknown-linux-gnu
-          - x86_64-apple-darwin
-    needs: [create-release]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v1
-        with:
-          name: create-release
-      - id: upload-url
+      - name: Package for linux-musl
+        if: matrix.target == 'x86_64-unknown-linux-musl'
         run: |
-          echo "::set-output name=url::$(cat create-release/release_upload_url.txt)"
-      - uses: actions/download-artifact@v1
+          zip --junk-paths rc-$｛｛ matrix.target ｝｝ target/$｛｛ matrix.target ｝｝/release/rc
+
+      - name: Package for windows
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        run: |
+          powershell Compress-Archive -Path target/$｛｛ matrix.target ｝｝/release/rc.exe -DestinationPath rc-$｛｛ matrix.target ｝｝.zip
+
+      - name: Package for macOS
+        if: matrix.target == 'x86_64-apple-darwin'
+        run: |
+          zip --junk-paths rc-$｛｛ matrix.target ｝｝ target/$｛｛ matrix.target ｝｝/release/rc
+
+      - uses: actions/upload-artifact@v2
         with:
-          name: build-${{ matrix.target }}
-      - uses: actions/upload-release-asset@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.upload-url.outputs.url }}
-          asset_path: ./build-${{ matrix.target }}/slack-stream-json-${{ matrix.target }}.zip
-          asset_name: slack-stream-json-${{ matrix.target }}.zip
-          asset_content_type: application/zip
+          name: build-$｛｛ matrix.target ｝｝
+          path: rc-$｛｛ matrix.target ｝｝.zip
