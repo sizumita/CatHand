@@ -7,6 +7,7 @@ use serenity::{
 use serenity::model::prelude::*;
 use regex::Regex;
 use serde_json::Value;
+use crate::webhook::get_or_create_webhook;
 
 
 lazy_static! {
@@ -151,24 +152,6 @@ pub async fn fetch_amazon_data(url: &str) -> Option<AmazonData> {
 }
 
 
-async fn get_or_create_webhook(ctx: &Context, message: &Message) -> Option<Webhook> {
-    let webhooks_r = message.channel_id.webhooks(&ctx.http).await;
-    match webhooks_r {
-        Ok(webhooks) => {
-            if webhooks.is_empty() {
-                let new_webhook = message.channel_id.create_webhook(&ctx.http, "猫の手").await;
-                match new_webhook {
-                    Ok(webhook) => Some(webhook),
-                    _ => None
-                }
-            } else {
-                webhooks.first().cloned()
-            }
-        },
-        _ => None
-    }
-}
-
 async fn find_amazon_urls(message: &Message) -> Vec<Value> {
     let mut amazon_data_list = Vec::new();
     for cap in AMAZON_REGEX.captures_iter(&*message.content) {
@@ -186,10 +169,9 @@ pub async fn send_amazon_embeds(ctx: &Context, message: &Message) {
     match webhook {
         Some(webhook) => {
             let _ = webhook.execute(&ctx.http, false, |hook| {
-                hook.embeds(data)
-                    .username(format!("{}#{}", &message.author.name, &message.author.discriminator))
-                    .avatar_url(&message.author.avatar_url().unwrap_or("".to_string()))
-                    .content(content)
+                hook.embeds(data).content(content)
+                    .avatar_url(message.author.avatar_url().unwrap_or(message.author.default_avatar_url().clone()))
+                    .username(format!("{}#{}", message.author.name, message.author.discriminator))
             }).await;
         },
         _ => {
@@ -206,9 +188,9 @@ mod tests {
     #[tokio::test]
     async fn fetch_test_amazon_data() {
         let test_data = AmazonData {
-            price: Some("￥880".to_string()),
+            price: Some(" ￥880 ".to_string()),
             image_url: Some("https://m.media-amazon.com/images/I/51oc7UqeIPL._SY346_.jpg".to_string()),
-            rating: Some("星5つ中の4.4".to_string()),
+            rating: Some("星5つ中の4.5".to_string()),
             title: Some("日本本土決戦～昭和２０年１１月、米軍皇土へ侵攻す！～ (光文社文庫) | 檜山 良昭 | 日本の小説・文芸 | Kindleストア | Amazon".to_string()),
             description: Some("Amazonで檜山 良昭の日本本土決戦～昭和２０年１１月、米軍皇土へ侵攻す！～ (光文社文庫)。アマゾンならポイント還元本が多数。一度購入いただいた電子書籍は、KindleおよびFire端末、スマートフォンやタブレットなど、様々な端末でもお楽しみいただけます。".to_string()),
             url: "https://www.amazon.co.jp/gp/product/B016K1K0AW/".to_string()

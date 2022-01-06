@@ -3,6 +3,9 @@ extern crate regex;
 mod event;
 mod amazon;
 mod twitter;
+mod percent_encoding;
+mod webhook;
+mod decoder;
 
 use std::env;
 

@@ -14,3 +14,7 @@ reqwest = { version = "0.11", features = ["json"] }
 scraper = "0.12.0"
 lazy_static = "1.4.0"
 serde_json = "*"
+urlencoding = "2.1.0"
+encoding_rs = "0.8.30"
+hex = "0.4.3"
+

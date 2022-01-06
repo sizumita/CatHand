@@ -7,14 +7,39 @@ use serenity::{
 use crate::Handler;
 use crate::amazon::{send_amazon_embeds, AMAZON_REGEX};
 use crate::twitter::{send_twitter_buttons, show_images};
+use crate::percent_encoding::{replace_all_match, send_replaced};
 use serenity::model::prelude::*;
 use regex::Regex;
 use serde_json::Value;
+use crate::decoder::{Decoder, EucJpDecoder, Utf8Decoder};
 
 lazy_static!{
     static ref TWITTER_REGEX: Regex = Regex::new(
         r"https?://twitter.com/(?P<username>[^/\s]+)/status/(?P<tweetId>[0-9]+)"
     ).unwrap();
+    static ref WIKIPEDIA_REGEX: Regex = Regex::new(
+        r"https?://ja\.wikipedia\.org/wiki/[^/\s]+"
+    ).unwrap();
+    static ref SEESAAWIKI_REGEX: Regex = Regex::new(
+        r"https://seesaawiki.jp/(?P<wikiname>[^/\s]+)/d/[^/\s]+"
+    ).unwrap();
+}
+
+fn replace_all_regex(ctx: &Context, message: &Message) -> Option<String> {
+    replace_all_match(
+        vec![&WIKIPEDIA_REGEX, &SEESAAWIKI_REGEX],
+        message.content.clone(),
+        |content| {
+            let s = content.clone().split("/").last().unwrap();
+            if WIKIPEDIA_REGEX.is_match(content) {
+                return content.to_string();
+            }
+            if SEESAAWIKI_REGEX.is_match(content.clone()) {
+                return format!("https://bardbot.net/api/seesaa/{}/{}", SEESAAWIKI_REGEX.replace(content.clone(), "$wikiname"), EucJpDecoder::decode(s.clone()));
+            }
+            return "".to_string();
+        }
+    )
 }
 
 #[async_trait]
@@ -28,6 +53,10 @@ impl EventHandler for Handler {
         };
         if message.embeds.len() != 0 {
             send_twitter_buttons(&ctx, &message).await;
+        }
+        if let Some(replaced) = replace_all_regex(&ctx, &message) {
+            send_replaced(&ctx, &message, replaced).await;
+            let _ = message.delete(&ctx.http).await;
         }
     }
 
