@@ -1,12 +1,9 @@
 use lazy_static::lazy_static;
 use serenity::{
-    async_trait,
-    model::{gateway::{Ready, Activity}},
     prelude::*,
 };
 use serenity::model::prelude::*;
 use regex::Regex;
-use serde_json::Value;
 use std::collections::HashMap;
 
 
@@ -74,7 +71,7 @@ pub async fn send_twitter_buttons(ctx: &Context, message: &Message) {
 }
 
 
-pub async fn show_images(ctx: &Context, interaction: &Interaction, component: &MessageComponent) {
+pub async fn show_images(ctx: &Context, interaction: &Interaction, _: &MessageComponent) {
     let reference = interaction.clone().message.unwrap().regular().unwrap().message_reference.unwrap();
     let embeds = reference.channel_id.message(&ctx.http, reference.message_id.unwrap()).await.unwrap().embeds;
     let all_twitter_urls = get_twitter_urls(

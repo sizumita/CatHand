@@ -10,8 +10,7 @@ use crate::twitter::{send_twitter_buttons, show_images};
 use crate::percent_encoding::{replace_all_match, send_replaced};
 use serenity::model::prelude::*;
 use regex::Regex;
-use serde_json::Value;
-use crate::decoder::{Decoder, EucJpDecoder, Utf8Decoder};
+use crate::decoder::{Decoder, EucJpDecoder};
 use crate::message_url::{get_message_urls, send_message_previews};
 
 lazy_static!{
@@ -26,7 +25,7 @@ lazy_static!{
     ).unwrap();
 }
 
-fn replace_all_regex(ctx: &Context, message: &Message) -> Option<String> {
+fn replace_all_regex(_: &Context, message: &Message) -> Option<String> {
     replace_all_match(
         vec![&WIKIPEDIA_REGEX, &SEESAAWIKI_REGEX],
         message.content.clone(),

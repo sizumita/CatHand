@@ -1,4 +1,3 @@
-use chrono::Utc;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serenity::builder::Timestamp;

@@ -1,9 +1,6 @@
-use encoding_rs::Encoding;
 use regex::Regex;
 use serenity::model::prelude::Message;
 use serenity::prelude::Context;
-use urlencoding::{decode, decode_binary};
-use crate::decoder::{Decoder, Utf8Decoder};
 use crate::webhook::get_or_create_webhook;
 
 pub fn get_all_match<F>(regexes: Vec<&Regex>, content: String, decoder: F) -> Vec<(String, String)>
