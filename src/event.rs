@@ -12,6 +12,7 @@ use serenity::model::prelude::*;
 use regex::Regex;
 use serde_json::Value;
 use crate::decoder::{Decoder, EucJpDecoder, Utf8Decoder};
+use crate::message_url::{get_message_urls, send_message_previews};
 
 lazy_static!{
     static ref TWITTER_REGEX: Regex = Regex::new(
@@ -47,6 +48,13 @@ impl EventHandler for Handler {
     async fn message(&self, ctx: Context, message: Message) {
         if message.webhook_id.is_some() { return; }
         if message.author.bot { return; }
+        if message.guild_id.is_some() {
+            let messages = get_message_urls(&ctx, message.content.clone().as_str(), message.guild_id.unwrap()).await;
+            if !messages.is_empty() {
+                send_message_previews(&ctx, &message, messages).await;
+            }
+        }
+
         if AMAZON_REGEX.is_match(&*message.content) {
             let _ = send_amazon_embeds(&ctx, &message).await;
             let _ = message.delete(&ctx.http).await;
@@ -60,7 +68,10 @@ impl EventHandler for Handler {
         }
     }
 
-    async fn message_update(&self, ctx: Context, message: MessageUpdateEvent) {
+    async fn message_update(&self, ctx: Context,
+                            _old_if_available: Option<Message>,
+                            _new: Option<Message>,
+                            message: MessageUpdateEvent) {
         if message.embeds.is_some() {
             let embeds = message.clone().embeds.unwrap();
             if embeds.len() != 0 {

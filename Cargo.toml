@@ -7,7 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serenity = { git = "https://github.com/serenity-rs/serenity.git", branch = "current", features = ["client", "gateway", "rustls_backend", "model", "unstable_discord_api"], default-features = false }
 tokio = { features = ["full"] }
 regex = "1.5.4"
 reqwest = { version = "0.11", features = ["json"] }
@@ -17,4 +16,10 @@ serde_json = "*"
 urlencoding = "2.1.0"
 encoding_rs = "0.8.30"
 hex = "0.4.3"
+chrono = "0.4.19"
 
+[dependencies.serenity]
+git = "https://github.com/serenity-rs/serenity.git"
+branch = "current"
+features = ["client", "gateway", "rustls_backend", "model", "unstable_discord_api", "cache"]
+default-features = false

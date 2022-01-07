@@ -48,7 +48,7 @@ pub async fn send_twitter_buttons(ctx: &Context, message: &Message) {
     let twitter_urls = get_twitter_urls(&message.embeds);
     'outer: for (tweet, urls) in twitter_urls.iter() {
         if urls.len() <= 1 { continue 'outer; }
-        message.channel_id.send_message(
+        let _ = message.channel_id.send_message(
             &ctx.http,
             |msg| {
                 msg
@@ -83,7 +83,7 @@ pub async fn show_images(ctx: &Context, interaction: &Interaction, component: &M
     let tweet_url = interaction.clone().message.unwrap().regular().unwrap()
         .content.replace("<", "").replace(">", "");
     let image_urls = all_twitter_urls.get(&Some(tweet_url)).unwrap();
-    interaction.create_interaction_response(&ctx.http, |response| {
+    let _ = interaction.create_interaction_response(&ctx.http, |response| {
         response.interaction_response_data(|data| {
             data.flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
                 .content(image_urls.join("\n"))

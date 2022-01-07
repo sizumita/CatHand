@@ -6,12 +6,14 @@ mod twitter;
 mod percent_encoding;
 mod webhook;
 mod decoder;
+mod message_url;
 
 use std::env;
 
 use serenity::{
     prelude::*,
 };
+use serenity::client::bridge::gateway::GatewayIntents;
 
 struct Handler;
 
@@ -30,6 +32,7 @@ async fn main() {
     let mut client = Client::builder(token)
         .event_handler(Handler)
         .application_id(application_id)
+        .intents(GatewayIntents::non_privileged() | GatewayIntents::GUILD_MEMBERS)
         .await
         .expect("Error creating client");
 
