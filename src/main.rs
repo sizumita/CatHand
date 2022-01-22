@@ -7,6 +7,7 @@ mod percent_encoding;
 mod webhook;
 mod decoder;
 mod message_url;
+mod message_command;
 
 use std::env;
 

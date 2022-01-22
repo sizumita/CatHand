@@ -5,6 +5,7 @@ use serenity::{
 use serenity::model::prelude::*;
 use regex::Regex;
 use std::collections::HashMap;
+use serenity::model::prelude::message_component::{ButtonStyle, MessageComponentInteraction};
 
 
 lazy_static!{
@@ -71,16 +72,16 @@ pub async fn send_twitter_buttons(ctx: &Context, message: &Message) {
 }
 
 
-pub async fn show_images(ctx: &Context, interaction: &Interaction, _: &MessageComponent) {
-    let reference = interaction.clone().message.unwrap().regular().unwrap().message_reference.unwrap();
-    let embeds = reference.channel_id.message(&ctx.http, reference.message_id.unwrap()).await.unwrap().embeds;
+pub async fn show_images(ctx: &Context, component: &MessageComponentInteraction) {
+    let reference = component.clone().message.referenced_message.unwrap();
+    let embeds = reference.channel_id.message(&ctx.http, reference.id).await.unwrap().embeds;
     let all_twitter_urls = get_twitter_urls(
         &embeds
     );
-    let tweet_url = interaction.clone().message.unwrap().regular().unwrap()
+    let tweet_url = component.clone().message
         .content.replace("<", "").replace(">", "");
     let image_urls = all_twitter_urls.get(&Some(tweet_url)).unwrap();
-    let _ = interaction.create_interaction_response(&ctx.http, |response| {
+    let _ = component.create_interaction_response(&ctx.http, |response| {
         response.interaction_response_data(|data| {
             data.flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
                 .content(image_urls.join("\n"))

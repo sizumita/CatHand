@@ -88,20 +88,24 @@ impl EventHandler for Handler {
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if interaction.kind == InteractionType::MessageComponent {
-            if let Some(data) = interaction.data.as_ref() {
-                match data {
-                    InteractionData::MessageComponent(component) => {
-                        match &*component.custom_id {
-                            "twitter-image" => {
-                                show_images(&ctx, &interaction, &component).await;
-                            }
-                            _ => {}
-                        }
-                    },
+        match interaction {
+            Interaction::MessageComponent(component) => {
+                match &*component.data.custom_id {
+                    "twitter-image" => {
+                        show_images(&ctx, &component).await;
+                    }
                     _ => {}
                 }
             }
+            Interaction::ApplicationCommand(command) => {
+                match &*command.data.name {
+                    "テキストの内容をファイルにする" => {
+                        crate::message_command::send_message_content_as_file(&ctx, &command).await;
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
         }
     }
 }
