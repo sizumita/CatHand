@@ -45,7 +45,7 @@ pub async fn send_message_previews(ctx: &Context, reference: &Message, messages:
                 )
                 .embed(
                     |embed| {
-                        let mut description = "".to_string();
+                        let mut description;
                         if message.content.len() > 100 {
                             description = format!("{}...", message.content.chars().take(100).collect::<String>());
                         } else {
