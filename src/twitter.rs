@@ -73,8 +73,8 @@ pub async fn send_twitter_buttons(ctx: &Context, message: &Message) {
 
 
 pub async fn show_images(ctx: &Context, component: &MessageComponentInteraction) {
-    let reference = component.clone().message.referenced_message.unwrap();
-    let embeds = reference.channel_id.message(&ctx.http, reference.id).await.unwrap().embeds;
+    let reference = component.clone().message.message_reference.unwrap();
+    let embeds = reference.channel_id.message(&ctx.http, reference.message_id.unwrap()).await.unwrap().embeds;
     let all_twitter_urls = get_twitter_urls(
         &embeds
     );
