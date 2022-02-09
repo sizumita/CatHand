@@ -1,3 +1,5 @@
+pub mod twitter;
+
 use std::borrow::Cow;
 use serenity::http::AttachmentType;
 use serenity::model::interactions::InteractionResponseType;

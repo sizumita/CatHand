@@ -102,6 +102,15 @@ impl EventHandler for Handler {
                     "テキストの内容をファイルにする" => {
                         crate::message_command::send_message_content_as_file(&ctx, &command).await;
                     }
+                    "Twitterでいいねする" => {
+                        crate::message_command::twitter::twitter_add_like(&ctx, &command).await;
+                    }
+                    "Twitterでリツイートする" => {
+                        crate::message_command::twitter::twitter_add_retweet(&ctx, &command).await;
+                    }
+                    "oauth" => {
+                        crate::slash_command::twitter_oauth(&ctx, &command).await;
+                    }
                     _ => {}
                 }
             }

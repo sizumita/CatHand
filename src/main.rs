@@ -8,6 +8,7 @@ mod webhook;
 mod decoder;
 mod message_url;
 mod message_command;
+mod slash_command;
 
 use std::env;
 
