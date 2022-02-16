@@ -12,7 +12,15 @@ pub async fn get_or_create_webhook(ctx: &Context, message: &Message) -> Option<W
                     _ => None
                 }
             } else {
-                webhooks.first().cloned()
+                if webhooks.clone().into_iter().all(|x| x.token == None) {
+                    let new_webhook = message.channel_id.create_webhook(&ctx.http, "猫の手").await;
+                    match new_webhook {
+                        Ok(webhook) => Some(webhook),
+                        _ => None
+                    }
+                } else {
+                    webhooks.first().cloned()
+                }
             }
         },
         _ => None

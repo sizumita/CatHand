@@ -15,7 +15,7 @@ use std::env;
 use serenity::{
     prelude::*,
 };
-use serenity::client::bridge::gateway::GatewayIntents;
+use serenity::model::prelude::GatewayIntents;
 
 struct Handler;
 

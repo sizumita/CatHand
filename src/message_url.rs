@@ -1,8 +1,8 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use serenity::builder::Timestamp;
 use serenity::model::id::GuildId;
 use serenity::model::prelude::{ChannelId, Message, MessageId};
+use serenity::model::Timestamp;
 use serenity::prelude::Context;
 
 lazy_static! {
@@ -19,7 +19,7 @@ pub async fn get_message_urls(ctx: &Context, content: &str, guild_id: GuildId) -
         }
         let channel_id = ChannelId::from(capture.name("channel_id").unwrap().as_str().parse::<u64>().unwrap());
         let message_id = MessageId::from(capture.name("message_id").unwrap().as_str().parse::<u64>().unwrap());
-        let message = ctx.cache.message(channel_id.clone(), message_id.clone()).await.unwrap_or(
+        let message = ctx.cache.message(channel_id.clone(), message_id.clone()).unwrap_or(
             channel_id.message(&ctx.http, message_id.clone()).await.unwrap()
         );
         messages.push(message);
@@ -28,7 +28,7 @@ pub async fn get_message_urls(ctx: &Context, content: &str, guild_id: GuildId) -
 }
 
 pub async fn send_message_previews(ctx: &Context, reference: &Message, messages: Vec<Message>) {
-    let guild = reference.guild(ctx).await;
+    let guild = reference.guild(ctx);
     let mut sent: Vec<MessageId> = vec![];
 
     for message in messages {

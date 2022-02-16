@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 tokio = { version = "1.16.1", features = ["full"] }
 regex = "1.5.4"
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.11.9", features = ["json"] }
 scraper = "0.12.0"
 lazy_static = "1.4.0"
 serde_json = "*"
@@ -20,6 +20,6 @@ chrono = "0.4.19"
 
 [dependencies.serenity]
 git = "https://github.com/serenity-rs/serenity.git"
-branch = "current"
+branch = "next"
 features = ["client", "gateway", "rustls_backend", "model", "unstable_discord_api", "cache"]
 default-features = false

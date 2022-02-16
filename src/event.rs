@@ -55,8 +55,10 @@ impl EventHandler for Handler {
         }
 
         if AMAZON_REGEX.is_match(&*message.content) {
-            let _ = send_amazon_embeds(&ctx, &message).await;
-            let _ = message.delete(&ctx.http).await;
+            let result = send_amazon_embeds(&ctx, &message).await;
+            if result.is_ok() {
+                let _ = message.delete(&ctx.http).await;
+            }
         };
         if message.embeds.len() != 0 {
             send_twitter_buttons(&ctx, &message).await;

@@ -1,10 +1,10 @@
 use lazy_static::lazy_static;
 use scraper::{Html, Selector, ElementRef};
-use serenity::model::prelude::Embed;
+use serenity::model::prelude::{Channel, Embed, GuildChannel};
 use serenity::{
     prelude::*,
 };
-use serenity::model::prelude::*;
+use serenity::model::prelude::{Message};
 use regex::Regex;
 use serde_json::Value;
 use crate::webhook::get_or_create_webhook;
@@ -162,22 +162,33 @@ async fn find_amazon_urls(message: &Message) -> Vec<Value> {
     amazon_data_list
 }
 
-pub async fn send_amazon_embeds(ctx: &Context, message: &Message) {
-    let data = find_amazon_urls(message).await;
-    let webhook = get_or_create_webhook(&ctx, &message).await;
-    let content = AMAZON_REGEX.replace_all(&message.content, "https://www.amazon.co.jp/gp/product/$asin").to_string();
-    match webhook {
-        Some(webhook) => {
-            let _ = webhook.execute(&ctx.http, false, |hook| {
-                hook.embeds(data).content(content)
-                    .avatar_url(message.author.avatar_url().unwrap_or(message.author.default_avatar_url().clone()))
-                    .username(format!("{}#{}", message.author.name, message.author.discriminator))
-            }).await;
-        },
-        _ => {
-            println!("permission error")
+pub async fn send_amazon_embeds(ctx: &Context, message: &Message) -> Result<(), ()> {
+    if let Channel::Guild(channel) = message.channel_id.to_channel(&ctx).await.unwrap() {
+        if channel.thread_metadata.is_some() {
+            return Err(())
+        }
+        let data = find_amazon_urls(message).await;
+        let webhook = get_or_create_webhook(&ctx, &message).await;
+        let content = AMAZON_REGEX.replace_all(&message.content, "https://www.amazon.co.jp/gp/product/$asin").to_string();
+        return match webhook {
+            Some(webhook) => {
+                let result = webhook.execute(&ctx.http, false, |hook| {
+                    hook.embeds(data).content(content)
+                        .avatar_url(message.author.avatar_url().unwrap_or(message.author.default_avatar_url().clone()))
+                        .username(format!("{}#{}", message.author.name, message.author.discriminator))
+                }).await;
+                match result {
+                    Ok(_) => { Ok(()) }
+                    Err(_) => { Err(()) }
+                }
+            },
+            _ => {
+                println!("permission error");
+                Err(())
+            }
         }
     }
+    Err(())
 }
 
 

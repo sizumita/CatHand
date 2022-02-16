@@ -1,10 +1,9 @@
 pub mod twitter;
 
 use std::borrow::Cow;
-use serenity::http::AttachmentType;
 use serenity::model::interactions::InteractionResponseType;
 use serenity::model::prelude::application_command::ApplicationCommandInteraction;
-use serenity::model::prelude::{InteractionApplicationCommandCallbackDataFlags};
+use serenity::model::prelude::{AttachmentType, InteractionApplicationCommandCallbackDataFlags};
 use serenity::prelude::Context;
 
 pub async fn send_message_content_as_file(ctx: &Context, command: &ApplicationCommandInteraction) {
