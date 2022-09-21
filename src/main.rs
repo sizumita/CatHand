@@ -15,8 +15,7 @@ use std::env;
 use serenity::{
     prelude::*,
 };
-use serenity::model::prelude::{ChannelId, GatewayIntents, MessageId};
-use serenity::model::Timestamp;
+use serenity::model::prelude::{GatewayIntents};
 
 struct Handler;
 

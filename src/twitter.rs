@@ -1,14 +1,11 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
-use moka::future::Cache;
 use serenity::builder::{CreateActionRow, CreateAllowedMentions, CreateButton, CreateComponents, CreateInteractionResponse, CreateInteractionResponseData, CreateMessage};
 use serenity::model::application::component::ButtonStyle;
 use serenity::model::channel::{MessageFlags, ReactionType};
-use serenity::model::id::{ChannelId, MessageId};
 use serenity::model::prelude::{Embed, Message};
 use serenity::model::prelude::interaction::message_component::MessageComponentInteraction;
-use serenity::model::Timestamp;
 use serenity::prelude::Context;
 
 
@@ -47,6 +44,7 @@ pub async fn send_twitter_buttons(ctx: &Context, message: &Message) {
     if !message.reactions.iter().filter(|x| x.reaction_type == ReactionType::Unicode("\u{1f9f2}".to_string())).collect::<Vec<_>>().is_empty() {
         return;
     }
+    let mut is_sent = false;
     let twitter_urls = get_twitter_urls(&message.embeds);
     'outer: for (tweet, urls) in twitter_urls.iter() {
         if urls.len() <= 1 { continue 'outer; }
@@ -70,11 +68,14 @@ pub async fn send_twitter_buttons(ctx: &Context, message: &Message) {
                         .replied_user(false)
                 )
         ).await;
+        is_sent = true
     }
-    let _ = message.react(
-        &ctx,
-        ReactionType::Unicode("\u{1f9f2}".to_string())
-    ).await;
+    if is_sent {
+        let _ = message.react(
+            &ctx,
+            ReactionType::Unicode("\u{1f9f2}".to_string())
+        ).await;
+    }
 }
 
 
