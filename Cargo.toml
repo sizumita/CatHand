@@ -17,7 +17,6 @@ urlencoding = "2.1.0"
 encoding_rs = "0.8.30"
 hex = "0.4.3"
 chrono = "0.4.19"
-moka = { version = "0.9", features = ["future"] }
 
 [dependencies.serenity]
 git = "https://github.com/serenity-rs/serenity.git"

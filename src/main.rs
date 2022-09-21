@@ -16,12 +16,9 @@ use serenity::{
     prelude::*,
 };
 use serenity::model::prelude::{ChannelId, GatewayIntents, MessageId};
-use moka::future::Cache;
 use serenity::model::Timestamp;
 
-struct Handler {
-    twitter_cache: Cache<(ChannelId, MessageId), Timestamp>
-}
+struct Handler;
 
 #[tokio::main]
 async fn main() {
@@ -36,9 +33,7 @@ async fn main() {
 
     // Build our client.
     let mut client = Client::builder(token, GatewayIntents::non_privileged() | GatewayIntents::GUILD_MESSAGES | GatewayIntents::GUILD_MEMBERS | GatewayIntents::MESSAGE_CONTENT)
-        .event_handler(Handler {
-            twitter_cache: Cache::new(100000)
-        })
+        .event_handler(Handler)
         .application_id(application_id)
         .await
         .expect("Error creating client");

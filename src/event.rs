@@ -62,7 +62,7 @@ impl EventHandler for Handler {
             }
         };
         if message.embeds.len() != 0 {
-            send_twitter_buttons(&ctx, &message, self.twitter_cache.clone()).await;
+            send_twitter_buttons(&ctx, &message).await;
         }
         if let Some(replaced) = replace_all_regex(&ctx, &message) {
             send_replaced(&ctx, &message, replaced).await;
@@ -79,7 +79,7 @@ impl EventHandler for Handler {
             if embeds.len() != 0 {
                 let base_message = ctx.http.get_message(message.channel_id.0.get(), message.id.0.get()).await;
                 if base_message.is_err() { return; }
-                send_twitter_buttons(&ctx, &base_message.unwrap(), self.twitter_cache.clone()).await;
+                send_twitter_buttons(&ctx, &base_message.unwrap()).await;
             }
         }
     }

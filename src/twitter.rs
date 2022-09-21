@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use moka::future::Cache;
 use serenity::builder::{CreateActionRow, CreateAllowedMentions, CreateButton, CreateComponents, CreateInteractionResponse, CreateInteractionResponseData, CreateMessage};
 use serenity::model::application::component::ButtonStyle;
-use serenity::model::channel::MessageFlags;
+use serenity::model::channel::{MessageFlags, ReactionType};
 use serenity::model::id::{ChannelId, MessageId};
 use serenity::model::prelude::{Embed, Message};
 use serenity::model::prelude::interaction::message_component::MessageComponentInteraction;
@@ -43,12 +43,11 @@ fn get_twitter_urls(embeds: &Vec<Embed>) -> HashMap<&Option<String>, Vec<String>
     map
 }
 
-pub async fn send_twitter_buttons(ctx: &Context, message: &Message, cache: Cache<(ChannelId, MessageId), Timestamp>) {
-    if cache.contains_key(&(message.channel_id.clone(), message.id.clone())) {
+pub async fn send_twitter_buttons(ctx: &Context, message: &Message) {
+    if !message.reactions.iter().filter(|x| x.reaction_type == ReactionType::Unicode("\u{1f9f2}".to_string())).collect::<Vec<_>>().is_empty() {
         return;
     }
     let twitter_urls = get_twitter_urls(&message.embeds);
-    cache.insert((message.channel_id.clone(), message.id.clone()), message.timestamp.clone()).await;
     'outer: for (tweet, urls) in twitter_urls.iter() {
         if urls.len() <= 1 { continue 'outer; }
         let _ = message.channel_id.send_message(
@@ -72,6 +71,10 @@ pub async fn send_twitter_buttons(ctx: &Context, message: &Message, cache: Cache
                 )
         ).await;
     }
+    let _ = message.react(
+        &ctx,
+        ReactionType::Unicode("\u{1f9f2}".to_string())
+    ).await;
 }
 
 
