@@ -1,4 +1,5 @@
 use regex::Regex;
+use serenity::builder::ExecuteWebhook;
 use serenity::model::prelude::Message;
 use serenity::prelude::Context;
 use crate::webhook::get_or_create_webhook;
@@ -34,11 +35,11 @@ pub async fn send_replaced(ctx: &Context, message: &Message, replaced: String) {
     let webhook = get_or_create_webhook(&ctx, &message).await;
     match webhook {
         Some(webhook) => {
-            let _ = webhook.execute(&ctx.http, false, |hook| {
-                hook.content(replaced)
-                    .avatar_url(message.author.avatar_url().unwrap_or(message.author.default_avatar_url().clone()))
-                    .username(format!("{}#{}", message.author.name, message.author.discriminator))
-            }).await;
+            let _ = webhook.execute(&ctx.http, false, ExecuteWebhook::new()
+                .content(replaced)
+                .avatar_url(message.author.avatar_url().unwrap_or(message.author.default_avatar_url().clone()))
+                .username(format!("{}#{}", message.author.name, message.author.discriminator))
+            ).await;
         }
         _ => {
             println!("permission error")

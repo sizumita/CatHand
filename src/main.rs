@@ -15,9 +15,13 @@ use std::env;
 use serenity::{
     prelude::*,
 };
-use serenity::model::prelude::GatewayIntents;
+use serenity::model::prelude::{ChannelId, GatewayIntents, MessageId};
+use moka::future::Cache;
+use serenity::model::Timestamp;
 
-struct Handler;
+struct Handler {
+    twitter_cache: Cache<(ChannelId, MessageId), Timestamp>
+}
 
 #[tokio::main]
 async fn main() {
@@ -31,10 +35,11 @@ async fn main() {
         .expect("application id is not a valid id");
 
     // Build our client.
-    let mut client = Client::builder(token)
-        .event_handler(Handler)
+    let mut client = Client::builder(token, GatewayIntents::non_privileged() | GatewayIntents::GUILD_MESSAGES | GatewayIntents::GUILD_MEMBERS | GatewayIntents::MESSAGE_CONTENT)
+        .event_handler(Handler {
+            twitter_cache: Cache::new(100000)
+        })
         .application_id(application_id)
-        .intents(GatewayIntents::non_privileged() | GatewayIntents::GUILD_MEMBERS)
         .await
         .expect("Error creating client");
 

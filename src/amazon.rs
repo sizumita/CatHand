@@ -1,12 +1,12 @@
 use lazy_static::lazy_static;
 use scraper::{Html, Selector, ElementRef};
-use serenity::model::prelude::{Channel, Embed, GuildChannel};
+use serenity::model::prelude::{Channel};
 use serenity::{
     prelude::*,
 };
 use serenity::model::prelude::{Message};
 use regex::Regex;
-use serde_json::Value;
+use serenity::builder::{CreateEmbed, CreateEmbedFooter, ExecuteWebhook};
 use crate::webhook::get_or_create_webhook;
 
 
@@ -28,18 +28,15 @@ pub struct AmazonData {
 }
 
 impl AmazonData {
-    pub fn make_embed(&self) -> Value {
-        Embed::fake(|embed| {
-            embed
-                .footer(|f| {f.text("Created by @猫の手")})
-                .url(&self.url)
-                .title(&self.title.as_deref().unwrap_or("???"))
-                .description(&self.description.as_deref().unwrap_or("???"))
-                .field("評価", &self.rating.as_deref().unwrap_or("???"), true)
-                .field("値段", &self.price.as_deref().unwrap_or("???"), true)
-                .thumbnail(&self.image_url.as_deref().unwrap_or(""));
-            embed
-        })
+    pub fn make_embed(&self) -> CreateEmbed {
+        CreateEmbed::new()
+            .footer(CreateEmbedFooter::new("Created by @猫の手"))
+            .url(&self.url)
+            .title(self.title.as_deref().unwrap_or("???"))
+            .description(self.description.as_deref().unwrap_or("???"))
+            .field("評価", self.rating.as_deref().unwrap_or("???"), true)
+            .field("値段", self.price.as_deref().unwrap_or("???"), true)
+            .thumbnail(self.image_url.as_deref().unwrap_or(""))
     }
 }
 
@@ -152,7 +149,7 @@ pub async fn fetch_amazon_data(url: &str) -> Option<AmazonData> {
 }
 
 
-async fn find_amazon_urls(message: &Message) -> Vec<Value> {
+async fn find_amazon_urls(message: &Message) -> Vec<CreateEmbed> {
     let mut amazon_data_list = Vec::new();
     for cap in AMAZON_REGEX.captures_iter(&*message.content) {
         let asin = cap.name("asin").unwrap().as_str();
@@ -172,11 +169,12 @@ pub async fn send_amazon_embeds(ctx: &Context, message: &Message) -> Result<(), 
         let content = AMAZON_REGEX.replace_all(&message.content, "https://www.amazon.co.jp/gp/product/$asin").to_string();
         return match webhook {
             Some(webhook) => {
-                let result = webhook.execute(&ctx.http, false, |hook| {
-                    hook.embeds(data).content(content)
-                        .avatar_url(message.author.avatar_url().unwrap_or(message.author.default_avatar_url().clone()))
-                        .username(format!("{}#{}", message.author.name, message.author.discriminator))
-                }).await;
+                let result = webhook.execute(&ctx.http, false,
+                ExecuteWebhook::new()
+                    .embeds(data).content(content)
+                    .avatar_url(message.author.avatar_url().unwrap_or(message.author.default_avatar_url().clone()))
+                    .username(format!("{}#{}", message.author.name, message.author.discriminator))
+                ).await;
                 match result {
                     Ok(_) => { Ok(()) }
                     Err(_) => { Err(()) }

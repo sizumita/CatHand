@@ -1,9 +1,10 @@
 use lazy_static::lazy_static;
 use std::env;
 use regex::Regex;
-use serenity::model::interactions::InteractionResponseType;
-use serenity::model::prelude::application_command::ApplicationCommandInteraction;
-use serenity::model::prelude::InteractionApplicationCommandCallbackDataFlags;
+use serenity::builder::{CreateInteractionResponse, CreateInteractionResponseData, CreateInteractionResponseFollowup};
+use serenity::model::channel::MessageFlags;
+use serenity::model::prelude::interaction::application_command::ApplicationCommandInteraction;
+use serenity::model::prelude::InteractionResponseType;
 use serenity::prelude::Context;
 
 lazy_static!{
@@ -18,9 +19,9 @@ pub async fn twitter_add_like(ctx: &Context, command: &ApplicationCommandInterac
     let message = command.data.resolved.messages.values().next().unwrap().clone();
     let _ = command.create_interaction_response(
         ctx.http.as_ref(),
-        |response| response
+        CreateInteractionResponse::new()
             .kind(InteractionResponseType::DeferredChannelMessageWithSource).interaction_response_data(
-            |d| d.flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+            CreateInteractionResponseData::new().flags(MessageFlags::EPHEMERAL)
         )
     ).await;
     for capture in TWITTER_REGEX.find_iter(message.content.as_str()) {
@@ -31,9 +32,9 @@ pub async fn twitter_add_like(ctx: &Context, command: &ApplicationCommandInterac
                 if res.status().is_success() {
                     let _ = command.create_followup_message(
                         ctx.http.as_ref(),
-                        |message| message
+                        CreateInteractionResponseFollowup::new()
                             .content(format!("{} をいいねしました。", capture.as_str()))
-                            .flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+                            .flags(MessageFlags::EPHEMERAL)
                     ).await;
                     continue
                 }
@@ -42,9 +43,9 @@ pub async fn twitter_add_like(ctx: &Context, command: &ApplicationCommandInterac
         }
         let _ = command.create_followup_message(
             ctx.http.as_ref(),
-            |message| message
+            CreateInteractionResponseFollowup::new()
                 .content(format!("{} をいいねできませんでした。認証してください。-> https://bardbot.net/api/twitter/oauth2", capture.as_str()))
-                .flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+                .flags(MessageFlags::EPHEMERAL)
         ).await;
     }
 }
@@ -55,9 +56,9 @@ pub async fn twitter_add_retweet(ctx: &Context, command: &ApplicationCommandInte
     let message = command.data.resolved.messages.values().next().unwrap().clone();
     let _ = command.create_interaction_response(
         ctx.http.as_ref(),
-        |response| response
+        CreateInteractionResponse::new()
             .kind(InteractionResponseType::DeferredChannelMessageWithSource).interaction_response_data(
-            |d| d.flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+            CreateInteractionResponseData::new().flags(MessageFlags::EPHEMERAL)
         )
     ).await;
     for capture in TWITTER_REGEX.find_iter(message.content.as_str()) {
@@ -68,9 +69,9 @@ pub async fn twitter_add_retweet(ctx: &Context, command: &ApplicationCommandInte
                 if res.status().is_success() {
                     let _ = command.create_followup_message(
                         ctx.http.as_ref(),
-                        |message| message
+                        CreateInteractionResponseFollowup::new()
                             .content(format!("{} をリツイートしました。", capture.as_str()))
-                            .flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+                            .flags(MessageFlags::EPHEMERAL)
                     ).await;
                     continue
                 }
@@ -79,9 +80,9 @@ pub async fn twitter_add_retweet(ctx: &Context, command: &ApplicationCommandInte
         }
         let _ = command.create_followup_message(
             ctx.http.as_ref(),
-            |message| message
+            CreateInteractionResponseFollowup::new()
                 .content(format!("{} をリツイートできませんでした。認証してください。-> https://bardbot.net/api/twitter/oauth2", capture.as_str()))
-                .flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+                .flags(MessageFlags::EPHEMERAL)
         ).await;
     }
 }

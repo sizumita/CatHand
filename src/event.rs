@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use serenity::{
     async_trait,
-    model::{gateway::{Ready, Activity}},
+    model::{gateway::{Ready}},
     prelude::*,
 };
 use crate::Handler;
@@ -10,6 +10,7 @@ use crate::twitter::{send_twitter_buttons, show_images};
 use crate::percent_encoding::{replace_all_match, send_replaced};
 use serenity::model::prelude::*;
 use regex::Regex;
+use serenity::gateway::ActivityData;
 use crate::decoder::{Decoder, EucJpDecoder};
 use crate::message_url::{get_message_urls, send_message_previews};
 
@@ -61,7 +62,7 @@ impl EventHandler for Handler {
             }
         };
         if message.embeds.len() != 0 {
-            send_twitter_buttons(&ctx, &message).await;
+            send_twitter_buttons(&ctx, &message, self.twitter_cache.clone()).await;
         }
         if let Some(replaced) = replace_all_regex(&ctx, &message) {
             send_replaced(&ctx, &message, replaced).await;
@@ -76,9 +77,9 @@ impl EventHandler for Handler {
         if message.embeds.is_some() {
             let embeds = message.clone().embeds.unwrap();
             if embeds.len() != 0 {
-                let base_message = ctx.http.get_message(message.channel_id.0, message.id.0).await;
+                let base_message = ctx.http.get_message(message.channel_id.0.get(), message.id.0.get()).await;
                 if base_message.is_err() { return; }
-                send_twitter_buttons(&ctx, &base_message.unwrap()).await;
+                send_twitter_buttons(&ctx, &base_message.unwrap(), self.twitter_cache.clone()).await;
             }
         }
     }
@@ -86,7 +87,7 @@ impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
 
-        ctx.set_activity(Activity::playing("猫の手も借りたい")).await;
+        ctx.set_activity(Some(ActivityData::playing("猫の手も借りたい")));
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {

@@ -1,19 +1,20 @@
 use lazy_static::lazy_static;
-use serenity::{
-    prelude::*,
-};
-use serenity::model::prelude::*;
 use regex::Regex;
 use std::collections::HashMap;
-use serenity::model::prelude::message_component::{ButtonStyle, MessageComponentInteraction};
+use moka::future::Cache;
+use serenity::builder::{CreateActionRow, CreateAllowedMentions, CreateButton, CreateComponents, CreateInteractionResponse, CreateInteractionResponseData, CreateMessage};
+use serenity::model::application::component::ButtonStyle;
+use serenity::model::channel::MessageFlags;
+use serenity::model::id::{ChannelId, MessageId};
+use serenity::model::prelude::{Embed, Message};
+use serenity::model::prelude::interaction::message_component::MessageComponentInteraction;
+use serenity::model::Timestamp;
+use serenity::prelude::Context;
 
 
 lazy_static!{
-    static ref TWITTER_REGEX: Regex = Regex::new(
-        r"https?://twitter.com/(?P<username>[^/\s]+)/status/(?P<tweetId>[0-9]+)(\?s=[0-9]+|)"
-    ).unwrap();
     static ref TWITTER_REGEX_ALL: Regex = Regex::new(
-        r"^https?://twitter.com/(?P<username>[^/\s]+)/status/(?P<tweetId>[0-9]+)(\?s=[0-9]+|)$"
+        r"^https?://twitter.com/(?P<username>[^/\s]+)/status/(?P<tweetId>[0-9]+)(\?s=[0-9]+|)"
     ).unwrap();
 }
 
@@ -42,31 +43,33 @@ fn get_twitter_urls(embeds: &Vec<Embed>) -> HashMap<&Option<String>, Vec<String>
     map
 }
 
-pub async fn send_twitter_buttons(ctx: &Context, message: &Message) {
+pub async fn send_twitter_buttons(ctx: &Context, message: &Message, cache: Cache<(ChannelId, MessageId), Timestamp>) {
+    if cache.contains_key(&(message.channel_id.clone(), message.id.clone())) {
+        return;
+    }
     let twitter_urls = get_twitter_urls(&message.embeds);
+    cache.insert((message.channel_id.clone(), message.id.clone()), message.timestamp.clone()).await;
     'outer: for (tweet, urls) in twitter_urls.iter() {
         if urls.len() <= 1 { continue 'outer; }
         let _ = message.channel_id.send_message(
             &ctx.http,
-            |msg| {
-                msg
-                    .reference_message(message)
-                    .components(|components| {
-                        components
-                            .create_action_row(|row| {
-                                row
-                                    .create_button(|button| {
-                                        button
-                                            .custom_id("twitter-image")
-                                            .style(ButtonStyle::Primary)
-                                            .label(format!("Show images ({})", urls.len()))
-                                    })
-                            })
-                    }).content(format!("<{}>", tweet.clone().as_ref().unwrap()))
-                    .allowed_mentions(|allowed| {
-                        allowed.replied_user(false)
-                    })
-            }
+            CreateMessage::new()
+                .reference_message(message)
+                .components(CreateComponents::new()
+                    .set_action_row(
+                        CreateActionRow::new()
+                            .add_button(
+                                CreateButton::new()
+                                    .custom_id("twitter-image")
+                                    .style(ButtonStyle::Primary)
+                                    .label(format!("Show images ({})", urls.len()))
+                            )
+                    )
+                ).content(format!("<{}>", tweet.clone().as_ref().unwrap()))
+                .allowed_mentions(
+                    CreateAllowedMentions::new()
+                        .replied_user(false)
+                )
         ).await;
     }
 }
@@ -81,10 +84,10 @@ pub async fn show_images(ctx: &Context, component: &MessageComponentInteraction)
     let tweet_url = component.clone().message
         .content.replace("<", "").replace(">", "");
     let image_urls = all_twitter_urls.get(&Some(tweet_url)).unwrap();
-    let _ = component.create_interaction_response(&ctx.http, |response| {
-        response.interaction_response_data(|data| {
-            data.flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+    let _ = component.create_interaction_response(&ctx.http, CreateInteractionResponse::new()
+        .interaction_response_data(
+            CreateInteractionResponseData::new()
+                .flags(MessageFlags::EPHEMERAL)
                 .content(image_urls.join("\n"))
-        })
-    }).await;
+        )).await;
 }
